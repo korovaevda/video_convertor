@@ -6,6 +6,8 @@ import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import Optional
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Request, Header, Depends
 from fastapi.responses import FileResponse, JSONResponse
@@ -558,6 +560,15 @@ async def health_check():
         "api_key_required": bool(config.API_KEY),
         "webhook_configured": bool(config.WEBHOOK_URL)
     }
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Главная страница с формой"""
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
 if __name__ == "__main__":
     import uvicorn

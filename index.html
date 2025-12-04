@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обработка видео</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        input[type="file"]:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .progress-bar.show {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Обработка видео</h1>
+        <p class="subtitle">Загрузите файлы для создания видео</p>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="videoZip">📦 ZIP архив с видео</label>
+                <input type="file" id="videoZip" name="video" accept=".zip" required>
+                <div class="file-info" id="zipInfo"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="audioMp3">🎵 Фоновая музыка (MP3)</label>
+                <input type="file" id="audioMp3" name="audio" accept=".mp3" required>
+                <div class="file-info" id="mp3Info"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="fadeDuration">⏱️ Длительность затухания (1-5 сек)</label>
+                <input type="number" id="fadeDuration" name="fade_duration" min="1" max="5" value="3" required>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Обработать видео
+            </button>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill"></div>
+            </div>
+
+            <div class="status" id="status"></div>
+        </form>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        const API_KEY = 'NMYB2RUxzZe5nuZgYZLxLE4DrllygXsV'; // Замените на ваш API ключ
+
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusDiv = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        const videoZip = document.getElementById('videoZip');
+        const audioMp3 = document.getElementById('audioMp3');
+        const zipInfo = document.getElementById('zipInfo');
+        const mp3Info = document.getElementById('mp3Info');
+
+        // Показать информацию о выбранных файлах
+        videoZip.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                zipInfo.textContent = `Выбран: ${file.name} (${formatFileSize(file.size)})`;
+            }
+        });
+
+        audioMp3.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                mp3Info.textContent = `Выбран: ${file.name} (${formatFileSize(file.size)})`;
+            }
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type} show`;
+        }
+
+        function hideStatus() {
+            statusDiv.className = 'status';
+        }
+
+        async function uploadFiles(formData) {
+            showStatus('Загрузка файлов...', 'info');
+            progressBar.classList.add('show');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Загрузка...';
+
+            try {
+                const response = await fetch(`${API_URL}/process-video`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': API_KEY
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Ошибка загрузки');
+                }
+
+                const data = await response.json();
+                return data.task_id;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function checkStatus(taskId) {
+            const response = await fetch(`${API_URL}/task-status/${taskId}`, {
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Ошибка проверки статуса');
+            }
+
+            return await response.json();
+        }
+
+        async function pollStatus(taskId) {
+            submitBtn.innerHTML = '<span class="spinner"></span> Обработка...';
+            showStatus('Обработка видео...', 'info');
+
+            const maxAttempts = 300; // 5 минут (300 * 1 сек)
+            let attempts = 0;
+
+            while (attempts < maxAttempts) {
+                try {
+                    const status = await checkStatus(taskId);
+
+                    if (status.status === 'success') {
+                        showStatus('✅ Готово! Скачивание начнется автоматически...', 'success');
+                        progressBar.classList.remove('show');
+                        
+                        // Скачать файл
+                        const downloadUrl = `${API_URL}/download/${taskId}`;
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = `result_${taskId}.mp4`;
+                        
+                        // Добавляем API ключ через fetch и blob
+                        const fileResponse = await fetch(downloadUrl, {
+                            headers: {
+                                'X-API-Key': API_KEY
+                            }
+                        });
+                        
+                        const blob = await fileResponse.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        a.href = url;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Обработать видео';
+                        
+                        // Сбросить форму
+                        form.reset();
+                        zipInfo.textContent = '';
+                        mp3Info.textContent = '';
+                        
+                        return;
+                    } else if (status.status === 'failed') {
+                        throw new Error(status.error || 'Ошибка обработки');
+                    } else if (status.status === 'processing') {
+                        showStatus(`Обработка: ${status.message || 'в процессе...'}`, 'info');
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            throw new Error('Превышено время ожидания');
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideStatus();
+
+            const formData = new FormData(form);
+
+            try {
+                const taskId = await uploadFiles(formData);
+                await pollStatus(taskId);
+            } catch (error) {
+                showStatus(`❌ Ошибка: ${error.message}`, 'error');
+                progressBar.classList.remove('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Обработать видео';
+            }
+        });
+    </script>
+</body>
+</html>
